@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>A test of html</title>
+<style>
+body {
+    font-family: Arial;
+    font-size: 14px;
+}
+
+h1 {
+    font-family: Helvetica;
+    font-size: 2em;
+}
+
+h2 {
+    font-family: Helvetica;
+    font-size: 1.5em;
+}
+
+.container {
+    width: 100%;
+}
+.container .main {
+    width: 200px;
+    float: left;
+    font-size: 1.0em;
+}
+.container .main .quant {
+    width: 35px;
+    align: right;
+    float: left;
+}
+.container .main .mnemonic {
+    width: 160px
+    align: left;
+    float: left;
+}
+.container .main .bumpbutton {
+    margin: 15px 10px 10px 10px;
+    width: 100px;
+    font-size: 1.5em;
+}
+.container .main .sizebutton {
+    margin: 15px 10px 10px 10px;
+    width: 100px;
+    font-size: 1em;
+}
+</style>
+
+<script>
+    var globalGcNum = 130;
+    var myFirst = "<div class=\"quant\">";
+    var mySecond = "</div><div class=\"mnemonic\">";
+    var myThird = "</div><br />";
+    var serverAdr = "http://192.168.0.5:8282";
+    var columnHeads = { currCol : 1, maxCol : 3, divCols : [ "main_0", "main_1", "main_2", "main_3", "main_empty" ] };
+
+    // change the font size to larger size.
+    function larger (ident) {
+        ident.style.fontSize = "1.5em";
+    }
+    // change the font size back to normal.
+    function smaller (ident) {
+        ident.style.fontSize = "1em";
+    }
+
+    function ripple1 (iCol) {
+        if (iCol < columnHeads.currCol) {
+            var i;
+            for (i = iCol; i <= columnHeads.maxCol; ++i) {
+               document.getElementById(columnHeads.divCols[i]).innerHTML = document.getElementById(columnHeads.divCols[i + 1]).innerHTML;
+            }
+            if (columnHeads.currCol > 1) columnHeads.currCol -= 1;
+        }
+    }
+
+    // Get the browser specific XmlHttpRequest
+    function createXHRObject() {
+        if (window.ActiveXObject) { // IE
+           return new ActiveXObject("Microsoft.XMLHTTP");
+        }  else if (window.XMLHttpRequest) {
+           return new XMLHttpRequest();
+        }
+    }
+    function getTestData(iCol) {
+        if (iCol > 0) {
+            ripple1 (iCol);
+        }
+        if (columnHeads.currCol >= columnHeads.maxCol) return;
+
+        // see http://eloquentjavascript.net/1st_edition/chapter14.html#p349618433b643891
+        // create the http communication object, prepare a GET to the server, and send it.
+        var xmlHttp = createXHRObject();
+        xmlHttp.open("GET", serverAdr, false);
+        xmlHttp.send ("/");
+        // we expect JSON response similar to "{\"gcno\":23, \"trans\" : [ { \"quant\": 3, \"mnemonic\":\"Hamburger\" } }"
+        var json = JSON.parse(xmlHttp.responseText);
+        // check to see if there is another transaction waiting or not.
+        if (json.gcno == 0) return;
+
+        // yes there is, json.gcno != 0 so lets process it.
+        var myHtml = "<h2>GC #";
+        myHtml += json.gcno;
+        myHtml += "</h2>";
+ 
+        var i;
+        for (i = 0; i < json.trans.length; i++) {
+            myHtml += myFirst;
+            myHtml += json.trans[i].quant;
+            myHtml += mySecond;
+            myHtml += json.trans[i].mnemonic;
+            myHtml += myThird;
+        }
+        var identDest = document.getElementById(columnHeads.divCols[columnHeads.currCol]);
+        identDest.innerHTML = myHtml;
+        columnHeads.currCol += 1;
+    }
+</script>
+
+</head>
+
+<body>
+
+<h1>A test of Kitchen Display</h1>
+
+<div class="container">
+
+<div class="main">
+<div class="main" id="main_1">
+</div>
+
+<div class="main" id="buttons_1">
+<button class="bumpbutton" id="main_1_bump" onclick="getTestData(1);">Bump</button><br />
+<button class="sizebutton" onclick="larger(document.getElementById('main_1'));">Larger</button><br />
+<button class="sizebutton" onclick="smaller(document.getElementById('main_1'));">Smaller</button><br />
+</div>
+</div>
+
+<div class="main">
+<div class="main" id="main_2">
+</div>
+
+<div class="main" id="buttons_2">
+<button class="bumpbutton" id="main_2_bump" onclick="getTestData(2);">Bump</button>
+<button class="sizebutton" onclick="larger(document.getElementById('main_2'));">Larger</button><br />
+<button class="sizebutton" onclick="smaller(document.getElementById('main_2'));">Smaller</button><br />
+</div>
+</div>
+
+<div class="main">
+<div class="main" id="main_3">
+</div>
+
+<div class="main" id="buttons_3">
+<button class="bumpbutton" id="main_3_bump" onclick="getTestData(3);">Bump</button>
+<button class="sizebutton" onclick="larger(document.getElementById('main_3'));">Larger</button><br />
+<button class="sizebutton" onclick="smaller(document.getElementById('main_3'));">Smaller</button><br />
+</div>
+</div>
+
+
+<div class="main" id="main_empty">
+<h2> </h2>
+
+<div class="quant"> </div><div class="mnemonic"> </div><br />
+<div class="quant"> </div><div class="mnemonic"> </div><br />
+<div class="quant"> </div><div class="mnemonic"> </div><br />
+<div class="quant"> </div><div class="mnemonic"> </div><br />
+<div class="quant"> </div><div class="mnemonic"> </div><br />
+<div class="quant"> </div><div class="mnemonic"> </div><br />
+</div>
+
+<div class="main" id="buttons_empty">
+<button class="bumpbutton" id="main_3_bump" onclick="getTestData(0);">Fetch New</button>
+</div>
+</div>
+
+</body>
+</html>
